@@ -1,42 +1,17 @@
 import React, { useState } from "react";
 
 const Calculator = () => {
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState("0");
+  const [evaluated, setEvaluated] = useState(false);
 
   const calculate = (expression) => {
     try {
-   
-      const tokens = expression.match(/(\d+\.?\d*|\+|\-|\*|\/)/g);
-      if (!tokens) return "Error";
-
-      let result = parseFloat(tokens[0]);
-
-      for (let i = 1; i < tokens.length; i += 2) {
-        const operator = tokens[i];
-        const nextNumber = parseFloat(tokens[i + 1]);
-
-        if (isNaN(nextNumber)) return "Error"; 
-
-        switch (operator) {
-          case "+":
-            result += nextNumber;
-            break;
-          case "-":
-            result -= nextNumber;
-            break;
-          case "*":
-            result *= nextNumber;
-            break;
-          case "/":
-            if (nextNumber === 0) return "Error"; 
-            result /= nextNumber;
-            break;
-          default:
-            return "Error";
-        }
-      }
-
-      return result.toString();
+      let sanitizedExpression = expression.replace(/\u2212/g, "-");
+      sanitizedExpression = sanitizedExpression.replace(/(\D)\1+/g, "$1");
+      sanitizedExpression = sanitizedExpression.replace(/([+\-*/])$/, "");
+      
+      const result = eval(sanitizedExpression);
+      return parseFloat(result.toFixed(4)).toString();
     } catch {
       return "Error";
     }
@@ -44,11 +19,28 @@ const Calculator = () => {
 
   const handleClick = (value) => {
     if (value === "AC") {
-      setInput("");
+      setInput("0");
+      setEvaluated(false);
     } else if (value === "=") {
       setInput(calculate(input));
+      setEvaluated(true);
     } else {
-      setInput((prev) => prev + value);
+      if (evaluated) {
+        if (/\d/.test(value)) {
+          setInput(value);
+        } else {
+          setInput(input + value);
+        }
+        setEvaluated(false);
+      } else {
+        if (value === "." && input.split(/[-+*/]/).pop().includes(".")) return;
+        if (value === "0" && input === "0") return;
+        if (/[-+*/]/.test(value) && /[-+*/]$/.test(input)) {
+          setInput(input.slice(0, -1) + value);
+        } else {
+          setInput(input === "0" ? value : input + value);
+        }
+      }
     }
   };
 
